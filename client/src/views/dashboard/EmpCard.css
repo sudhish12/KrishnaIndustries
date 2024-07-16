@@ -1,0 +1,49 @@
+.emp-card {
+    width: 350px;
+    height: 120px;
+    padding: 0.5rem;
+    background: #1E88E5;
+    border-radius: 8px;
+    backdrop-filter: blur(5px);
+    border-bottom: 3px solid rgba(255, 255, 255, 0.440);
+    border-left: 2px  rgba(255, 255, 255, 0.545) outset;
+    box-shadow: -40px 50px 30px rgba(0, 0, 0, 0.280);
+    transform: skewX(10deg);
+    transition: .4s;
+    overflow: hidden;
+    color: white;
+  }
+  
+  .emp-card:hover {
+    height: 168px;
+    transform: skew(0deg);
+  }
+  
+  .emp-card h3 {
+    text-align: center;
+    margin: 1.3rem;
+    color: rgb(218, 244, 237);
+    text-shadow: -10px 5px 10px rgba(0, 0, 0, 0.573);
+  }
+  
+  .emp-card-heading {
+    font-size: 2rem;
+    font-weight: bold;
+    color: whitesmoke;
+  }
+  
+  .emp-value {
+    text-align: center;
+    margin: 0.5rem;
+    font-size: 3rem;
+  }
+  
+  .icon-container {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .emp-icon {
+    font-size: 2.5rem;
+  }
+  
