@@ -168,8 +168,78 @@ module.exports = (db) =>{
         });
     });
     
-    
-    
+
+    // calculate total purchase amount 
+    router.get('/totalPurchaseAmount', (req, res) => {
+        const { filter } = req.query; // Get the filter parameter from the query string
+
+        let getData;
+        let getParams = []; // Parameters for the prepared statement
+
+        if (filter === 'days') {
+            // Filter by days in the current month
+            const startOfMonth = moment().startOf('month').format('YYYY-MM-DD');
+            const endOfMonth = moment().endOf('month').format('YYYY-MM-DD');
+            getData = `
+                SELECT
+                    DATE(cp.created_at) AS date,
+                    SUM(cp.total) AS total_amount
+                FROM
+                    cust_purch_logs cp
+                WHERE
+                    DATE(cp.created_at) BETWEEN ? AND ?
+                GROUP BY
+                    DATE(cp.created_at)
+                ORDER BY
+                    DATE(cp.created_at)
+            `;
+            getParams.push(startOfMonth, endOfMonth);
+        } else if (filter === 'months') {
+            // Filter by months in the current year
+            const startOfYear = moment().startOf('year').format('YYYY-MM-DD');
+            const endOfYear = moment().endOf('year').format('YYYY-MM-DD');
+            getData = `
+                SELECT
+                    MONTH(cp.created_at) AS month,
+                    SUM(cp.total) AS total_amount
+                FROM
+                    cust_purch_logs cp
+                WHERE
+                    DATE(cp.created_at) BETWEEN ? AND ?
+                GROUP BY
+                    MONTH(cp.created_at)
+                ORDER BY
+                    MONTH(cp.created_at)
+            `;
+            getParams.push(startOfYear, endOfYear);
+        } else if (filter === 'years') {
+            // Filter by years
+            getData = `
+                SELECT
+                    YEAR(cp.created_at) AS year,
+                    SUM(cp.total) AS total_amount
+                FROM
+                    cust_purch_logs cp
+                GROUP BY
+                    YEAR(cp.created_at)
+                ORDER BY
+                    YEAR(cp.created_at)
+            `;
+        } else {
+            return res.status(400).json({ message: "Invalid filter parameter. Use 'days', 'months', or 'years'." });
+        }
+
+        db.query(getData, getParams, (getErr, getRes) => {
+            if (getErr) {
+                res.status(500).json({ message: "Internal server error." });
+            } else if (getRes.length === 0) {
+                res.status(404).json({ message: "Data not found." });
+            } else {
+                res.status(200).json(getRes);
+            }
+        });
+    });
+ 
     
     
 

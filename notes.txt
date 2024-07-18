@@ -1,0 +1,9 @@
+dashboard :
+pie chart : total sales , total purchase , total profit 
+total employee, today attandance ,
+  
+
+  profit = /sales/profit
+  totalsales = /sales/totalSalesAmount
+  todayattendance = /emp_attend/todayAttendance
+  totalpurchase = /cust_purch/totalPurchaseAmount
