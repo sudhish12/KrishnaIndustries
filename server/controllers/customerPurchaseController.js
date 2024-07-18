@@ -172,10 +172,10 @@ module.exports = (db) =>{
     // calculate total purchase amount 
     router.get('/totalPurchaseAmount', (req, res) => {
         const { filter } = req.query; // Get the filter parameter from the query string
-
+    
         let getData;
         let getParams = []; // Parameters for the prepared statement
-
+    
         if (filter === 'days') {
             // Filter by days in the current month
             const startOfMonth = moment().startOf('month').format('YYYY-MM-DD');
@@ -193,7 +193,7 @@ module.exports = (db) =>{
                 ORDER BY
                     DATE(cp.created_at)
             `;
-            getParams.push(startOfMonth, endOfMonth);
+            getParams = [startOfMonth, endOfMonth];
         } else if (filter === 'months') {
             // Filter by months in the current year
             const startOfYear = moment().startOf('year').format('YYYY-MM-DD');
@@ -211,9 +211,22 @@ module.exports = (db) =>{
                 ORDER BY
                     MONTH(cp.created_at)
             `;
-            getParams.push(startOfYear, endOfYear);
+            getParams = [startOfYear, endOfYear];
         } else if (filter === 'years') {
-            // Filter by years
+            // Filter by years and show data for individual years
+            getData = `
+                SELECT
+                    YEAR(cp.created_at) AS year,
+                    SUM(cp.total) AS total_amount
+                FROM
+                    cust_purch_logs cp
+                GROUP BY
+                    YEAR(cp.created_at)
+                ORDER BY
+                    YEAR(cp.created_at)
+            `;
+        } else if (filter === 'allYears') {
+            // Retrieve total purchase amount for all years
             getData = `
                 SELECT
                     YEAR(cp.created_at) AS year,
@@ -226,9 +239,9 @@ module.exports = (db) =>{
                     YEAR(cp.created_at)
             `;
         } else {
-            return res.status(400).json({ message: "Invalid filter parameter. Use 'days', 'months', or 'years'." });
+            return res.status(400).json({ message: "Invalid filter parameter. Use 'days', 'months', 'years', or 'allYears'." });
         }
-
+    
         db.query(getData, getParams, (getErr, getRes) => {
             if (getErr) {
                 res.status(500).json({ message: "Internal server error." });
@@ -239,6 +252,7 @@ module.exports = (db) =>{
             }
         });
     });
+    
  
     
     

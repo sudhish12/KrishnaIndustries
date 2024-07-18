@@ -28,11 +28,12 @@ const EmployeeCard = () => {
   useEffect(() => {
     const fetchAttendance = async () => {
       try {
-        const response = await axios.get(`${config.apiUrl}/emp_attend/todayAttendance`);
+        const response = await axios.get(`http://localhost:3030/emp_attend/todayAttendance`);
+       console.log(response.data)
         const { attendance } = response.data;
-        setAttendance(attendance);
-        setTotalCount(attendance.length); // Setting total count based on the fetched data
-        setLoading(false);
+          setAttendance(attendance);
+          setTotalCount(attendance.length); // Setting total count based on the fetched data
+          setLoading(false);
       } catch (error) {
         setError('Error fetching data');
         setLoading(false);
