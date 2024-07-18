@@ -10,6 +10,10 @@ import CustomerCard from './CustomerCard';
 import TodayFlwLeadsCount from './TodayFlwLeadsCount';
 import TodayRememberLeadsCount from './TodayRememberLeadsCount';
 import ProductSalesChart from './ProductSalesChart';
+import TotalProfit from './chart-data/TotalProfitChart';
+import TotalPurchaseAmount from './chart-data/TotalPurchase';
+import TotalSalesPieChart from './chart-data/TotalSales';
+import TodayAttendance from './EmpAttandanceCount';
 
 import { gridSpacing } from 'store/constant';
 
@@ -59,15 +63,18 @@ const AdminDashboard = () => {
           <Grid item xs={8}>
           <Grid container spacing={gridSpacing}>
             <Grid item xs={12}>
-            <ProductSalesChart isLoading={isLoading} />
+            {/* <ProductSalesChart isLoading={isLoading} /> */}
+            <TotalSalesPieChart/>
             </Grid>
             <Grid item xs={12}>
-            <ProductSalesChart isLoading={isLoading} />
+            {/* <ProductSalesChart isLoading={isLoading} /> */}
+            <TotalPurchaseAmount/>
             </Grid>
           </Grid>
           </Grid>
           <Grid item xs={4}>
-          <CustomertAmountDetailsCard isLoading={isLoading} />
+          {/* <CustomertAmountDetailsCard isLoading={isLoading} /> */}
+          <TotalProfit/>
           </Grid>
         </Grid>
       </Grid>

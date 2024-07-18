@@ -46,6 +46,27 @@ module.exports = (db) =>{
         }
     });
 
+// API to get today's employee attendance
+router.get('/todayAttendance', (req, res) => {
+    try {
+        const todayDate = moment().format('YYYY-MM-DD');
+
+        const getTodayAttendanceQuery = 'SELECT * FROM emp_attendance WHERE DATE(entry_at) = ?';
+        db.query(getTodayAttendanceQuery, [todayDate], (getTodayAttendanceErr, getTodayAttendanceRes) => {
+            if (getTodayAttendanceErr) {
+                return res.status(500).json({ message: "Internal server error." });
+            }
+
+            if (getTodayAttendanceRes.length === 0) {
+                return res.status(404).json({ message: "No attendance records found for today." });
+            }
+
+            res.status(200).json({ attendance: getTodayAttendanceRes });
+        });
+    } catch (err) {
+        res.status(500).json({ message: "Internal server error." });
+    }
+});
 
     router.post('/empExit/:empId', (req, res) => {
         try {
