@@ -2,27 +2,42 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import ReactApexChart from 'react-apexcharts';
 import MainCard from 'ui-component/cards/MainCard';
-import { Grid, TextField, Typography } from '@mui/material';
+import { Grid, TextField, Typography, Box } from '@mui/material';
 import { gridSpacing } from 'store/constant';
 import moment from 'moment';
-import config from '../../config'
+import config from '../../config';
 
 const EmpAttendanceChart = () => {
   const [attendanceData, setAttendanceData] = useState([]);
+  const [employeeName, setEmployeeName] = useState('');
   const [year, setYear] = useState(moment().format('YYYY'));
+  const empId = sessionStorage.getItem('emp_id'); // Replace this with the appropriate empId
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchAttendanceData = async () => {
       try {
-        const response = await axios.get(`${config.apiUrl}/emp_attend/empAttendChart/?empId=5&year=${year}`);
+        const response = await axios.get(`${config.apiUrl}/emp_attend/empAttendChart/?empId=${empId}&year=${year}`);
         setAttendanceData(response.data);
       } catch (error) {
         console.error('Error fetching attendance data:', error);
       }
     };
 
-    fetchData();
-  }, [year]);
+    fetchAttendanceData();
+  }, [year, empId]);
+
+  useEffect(() => {
+    const fetchEmployeeName = async () => {
+      try {
+        const response = await axios.get(`${config.apiUrl}/employee/name/${empId}`);
+        setEmployeeName(response.data.emp_name);
+      } catch (error) {
+        console.error('Error fetching employee name:', error);
+      }
+    };
+
+    fetchEmployeeName();
+  }, [empId]);
 
   const months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -49,17 +64,28 @@ const EmpAttendanceChart = () => {
 
   return (
     <>
-     <MainCard>
-      <Grid container spacing={gridSpacing}>
-        <Grid item lg={8} md={12} sm={12} xs={12}>
-        <Typography variant="h1" className='text-center'>Employee Attendance</Typography>
+      <MainCard>
+        <Grid container spacing={gridSpacing}>
+          <Grid item lg={8} md={12} sm={12} xs={12}>
+            <Box textAlign="center">
+              <Typography variant="h1" gutterBottom>
+                {employeeName}
+              </Typography>
+              <Typography variant="h2">Employee Attendance</Typography>
+            </Box>
+          </Grid>
+          <Grid item lg={4} md={12} sm={12} xs={12}>
+            <TextField 
+              label="Enter Year" 
+              value={year} 
+              InputLabelProps={{ shrink: true }} 
+              onChange={(e) => setYear(e.target.value)} 
+              fullWidth
+            />
+          </Grid>
         </Grid>
-        <Grid item lg={4} md={12} sm={12} xs={12}>
-          <TextField label = "Enter Year" value={year} InputLabelProps={{shrink:true}} onChange={(e)=>setYear(e.target.value)}/>
-        </Grid>
-      </Grid>
-     <ReactApexChart options={pieChartData.options} series={pieChartData.series} type="pie" height={400} />
-     </MainCard>
+        <ReactApexChart options={pieChartData.options} series={pieChartData.series} type="pie" height={400} />
+      </MainCard>
     </>
   );
 };

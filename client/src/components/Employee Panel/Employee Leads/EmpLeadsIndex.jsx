@@ -42,7 +42,7 @@ const EmpLeadsIndex = () => {
     moment(`${yesterday} 22:00:00`).format("YYYY-MM-DD HH:mm:ss")
   );
   const [endTime, setEndTime] = useState(
-    moment(`${today} 10:00:00`).format("YYYY-MM-DD HH:mm:ss")
+    moment().format("YYYY-MM-DD HH:mm:ss")
   );
   const [filterLeadsData, setFilterLeadsData] = useState(false);
   const [todayLeadsData, setTodayLeadsData] = useState(false);
@@ -246,7 +246,7 @@ const currentData = unFollowedLeads.slice(firstIndexOfData, lastIndexOfData);
       <TableContainer component={Paper} className="mt-3">
         <Table>
           <TableHead>
-            <TableRow>
+            <TableRow style={{ fontWeight: "bold", backgroundColor: "#FFF9C4" }}>
               <TableCell style={{ fontWeight: "bold" }}>S.No</TableCell>
               <TableCell style={{ fontWeight: "bold" }}>Name</TableCell>
               <TableCell style={{ fontWeight: "bold" }}>

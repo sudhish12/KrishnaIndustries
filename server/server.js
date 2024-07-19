@@ -36,10 +36,10 @@ const storage = multer.diskStorage({
 
 
 const db = mysql.createPool({
-  host : '193.203.184.74',
+  host : 'localhost',
   port : '3306',
-  user : 'u534462265_asglobal',
-  password : 'ASGlobal@12345',
+  user : 'root',
+  password : '0210',
   database : 'u534462265_crm'
 })
 

@@ -5,6 +5,7 @@ const moment = require('moment');
 module.exports = (db) =>{
 
     router.post('/convertCustomer', (req, res) => {
+        console.log("succc");
         try {
             const { emp_id, cust_name, cust_mobile, cust_email, cust_company, cust_address, cust_state, cust_city } = req.body;
             const currentDate = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -21,8 +22,10 @@ module.exports = (db) =>{
                 currentDate ?? null,
             ], (insertErr, insertRes) => {
                 if (insertErr) {
+                    console.error("Error saving leads data:", insertErr);
                     res.status(500).json({ message: "Internal server error." });
                 } else {
+                    console.log("convert customer data added successfully.");
                     res.status(200).json({ message: "Customer data added successfully." });
                 }
             });

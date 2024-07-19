@@ -154,6 +154,7 @@ const EmpTodayRememberLeadsCount = () => {
     axios.get(`${config.apiUrl}/leads/leadsCountForEmpDashboard/${empId}`)
   .then((res)=>{
     setLeadsCount(res.data);
+    
   })
   .catch((err)=>{
     console.log("Leads Data can't fetched.")

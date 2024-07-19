@@ -18,6 +18,23 @@ module.exports = (db,transporter) =>{
     })
   })
 
+  router.get('/name/:empId', (req, res) => {
+    const empId = req.params.empId;
+  
+    const query = 'SELECT emp_name FROM employee WHERE emp_id = ?';
+  
+    db.query(query, [empId], (err, result) => {
+      if (err) {
+        console.error('Error fetching employee name:', err);
+        res.status(500).json({ message: "Internal server error." });
+      } else if (result.length === 0) {
+        res.status(404).json({ message: "Employee not found." });
+      } else {
+        res.status(200).json({ emp_name: result[0].emp_name });
+      }
+    });
+  });
+
   router.post('/saveEmp', (req, res) => {
     const { dept_id, role_id, lang_id, emp_name, emp_email, emp_mobile, state, dist, city, hire_date } = req.body;
 

@@ -25,7 +25,7 @@ module.exports = (db) =>{
             const checkEntryQuery = 'SELECT * FROM emp_attendance WHERE emp_id = ? AND DATE(entry_at) = ?';
             db.query(checkEntryQuery, [empId, currentDate], (checkEntryErr, checkEntryRes) => {
                 if (checkEntryErr) {
-                    return res.status(500).json({ message: "Internal server error." });
+                    return res.status(500).json({ message: "Internal server error." }); 
                 }
     
                 if (checkEntryRes.length > 0) {

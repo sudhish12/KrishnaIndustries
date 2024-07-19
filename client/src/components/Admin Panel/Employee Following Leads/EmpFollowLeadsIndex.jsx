@@ -268,7 +268,7 @@ const handleFilterClear = () => {
       <TableContainer component={Paper} style={{ marginTop: "20px" }}>
         <Table>
           <TableHead>
-            <TableRow>
+            <TableRow style={{ fontWeight: "bold", backgroundColor: "#FFF9C4" }}>
               <TableCell style={{ fontWeight: "bold" }}>S.No</TableCell>
               <TableCell style={{ fontWeight: "bold" }}>
                 Employee Name

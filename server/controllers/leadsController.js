@@ -3,70 +3,138 @@ const router = express.Router();
 const moment = require('moment');
 const axios = require('axios');
 
-module.exports = (db) =>{
-
+module.exports = (db) => {
     router.get('/leadsData', async (req, res) => {
+        console.log("runLeadsData");
         try {
-            const { startTime, endTime } = req.query; 
-            const currentDate = moment(); // Change here
-            const getApiLogs = 'select * from api_logs order by log_id desc limit 1';
-            db.query(getApiLogs, async (logErr,logRes)=>{
-                if(logErr){
-                    res.status(500).json({message:"Internal Server Error."})
-                }else{
-                    if(logRes.length > 0){
-                        const apiHitTime = moment(logRes[0].api_hit_time);
-                        const diffMinutes = moment.duration(currentDate.diff(apiHitTime)).asMinutes();
+            const { startTime, endTime } = req.query;
+            const currentDate = moment();
+            const getApiLogs = 'SELECT * FROM api_logs ORDER BY log_id DESC LIMIT 1';
     
-                        if(diffMinutes > 5){
-                            if (startTime && endTime) {
-                                const start = moment(startTime).format("DD-MM-YYYY HH:mm:ss");
-                                const end = moment(endTime).format("DD-MM-YYYY HH:mm:ss");
-                                
+            db.query(getApiLogs, async (logErr, logRes) => {
+                if (logErr) {
+                    console.error('Error fetching API logs:', logErr);
+                    return res.status(500).json({ message: "Internal Server Error." });
+                }
+    
+                if (logRes.length > 0) {
+                    const apiHitTime = moment(logRes[0].api_hit_time);
+                    const diffMinutes = moment.duration(currentDate.diff(apiHitTime)).asMinutes();
+    
+                    if (diffMinutes > 1) { // Change to 1 minute
+                        if (startTime && endTime) {
+                            console.log(`${startTime},end:${endTime}`);
+                            const start = moment(startTime).format("DD-MM-YYYY HH:mm:ss");
+                            const end = moment(endTime).format("DD-MM-YYYY HH:mm:ss");
+                            console.log(`starttime:${start},endtime${end}`);
+                            try {
                                 const response = await axios.get(`https://mapi.indiamart.com/wservce/crm/crmListing/v2/?glusr_crm_key=mR20Er1s5HfDQPep4XWK7l+Pp1LDnzI=&start_time=${start}&end_time=${end}`);
                                 const data = response.data;
-                    
-                                let api_hit_time = moment().format('YYYY-MM-DD HH:mm:ss'),
-                                start_date = moment(startTime).format('YYYY-MM-DD HH:mm:ss'),
-                                end_date = moment(endTime).format('YYYY-MM-DD HH:mm:ss'),
-                                count = data.TOTAL_RECORDS,
-                                res_code = data.CODE,
-                                message = ''
-                                if (data.MESSAGE === '') {
-                                    message = `Success. ${response.data.TOTAL_RECORDS} leads were returned for this API request.`;
-                                } else {
-                                    message = response.data.MESSAGE;
-                                }
+                                // console.log(data);
+    
+                                const api_hit_time = moment().format('YYYY-MM-DD HH:mm:ss');
+                                const start_date = moment(startTime).format('YYYY-MM-DD HH:mm:ss');
+                                const end_date = moment(endTime).format('YYYY-MM-DD HH:mm:ss');
+                                const count = data.TOTAL_RECORDS;
+                                const res_code = data.CODE;
+                                const message = data.MESSAGE || `Success. ${count} leads were returned for this API request.`;
+    
+                                // Save API log
                                 const saveApiLog = 'INSERT INTO api_logs (api_hit_time, start_date, end_date, count, res_code, message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)';
-                                db.query(saveApiLog,[api_hit_time,start_date,end_date,count,res_code,message,api_hit_time],(saveErr,saveRes)=>{
-                                    if(saveErr){
-                                        res.status(500).json({message:"Api Log is not added"})
-                                    }else{
-                                        res.status(200).json({message:"Api logs stored successfully.",data});
+                                db.query(saveApiLog, [api_hit_time, start_date, end_date, count, res_code, message, api_hit_time], async (saveErr) => {
+                                    if (saveErr) {
+                                        console.error('Error saving API log:', saveErr);
+                                        return res.status(500).json({ message: "API log not added" });
                                     }
-                                })
-                            } else {
-                                res.status(400).json({ error: 'Missing startTime or endTime parameters' }); 
+    
+                                    // Insert each lead into the leads table
+                                    const saveLead = 'INSERT INTO leads_data (unique_query_id, query_type, query_time, sender_name, sender_mobile, sender_email, subject, sender_company, sender_address, sender_city, sender_state, sender_pincode, sender_country_iso, sender_mobile_alt, sender_phone, sender_phone_alt, sender_email_alt, query_product_name, query_message, query_mcat_name, call_duration, receiver_mobile) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                                    const leadPromises = data.RESPONSE.map(lead => {
+                                        return new Promise((resolve, reject) => {
+                                            const checkDuplicate = 'SELECT COUNT(*) AS count FROM leads_data WHERE unique_query_id = ?';
+                                            db.query(checkDuplicate, [lead.UNIQUE_QUERY_ID], (checkErr, checkRes) => {
+                                                if (checkErr) {
+                                                    console.error('Error checking for duplicate lead:', checkErr);
+                                                    return reject(checkErr);
+                                                }
+    
+                                                if (checkRes[0].count === 0) {
+                                                    const values = [
+                                                        lead.UNIQUE_QUERY_ID,
+                                                        lead.QUERY_TYPE,
+                                                        lead.QUERY_TIME,
+                                                        lead.SENDER_NAME,
+                                                        lead.SENDER_MOBILE,
+                                                        lead.SENDER_EMAIL || null,
+                                                        lead.SUBJECT || null,
+                                                        lead.SENDER_COMPANY || null,
+                                                        lead.SENDER_ADDRESS || null,
+                                                        lead.SENDER_CITY || null,
+                                                        lead.SENDER_STATE || null,
+                                                        lead.SENDER_PINCODE || null,
+                                                        lead.SENDER_COUNTRY_ISO,
+                                                        lead.SENDER_MOBILE_ALT || null,
+                                                        lead.SENDER_PHONE || null,
+                                                        lead.SENDER_PHONE_ALT || null,
+                                                        lead.SENDER_EMAIL_ALT || null,
+                                                        lead.QUERY_PRODUCT_NAME,
+                                                        lead.QUERY_MESSAGE,
+                                                        lead.QUERY_MCAT_NAME,
+                                                        lead.CALL_DURATION || null,
+                                                        lead.RECEIVER_MOBILE || null
+                                                    ];
+    
+                                                    db.query(saveLead, values, (err) => {
+                                                        if (err) {
+                                                            console.error('Error saving lead:', err);
+                                                            return reject(err);
+                                                        }
+                                                        resolve();
+                                                    });
+                                                } else {
+                                                    resolve(); // If it's a duplicate, just resolve
+                                                }
+                                            });
+                                        });
+                                    });
+    
+                                    try {
+                                        // Wait for all leads to be inserted
+                                        await Promise.all(leadPromises);
+                                        return res.status(200).json({ message: "API logs and leads data stored successfully.", data });
+                                    } catch (insertError) {
+                                        console.error('Error inserting leads:', insertError);
+                                        return res.status(500).json({ message: 'Error saving leads' });
+                                    }
+                                });
+                            } catch (apiErr) {
+                                console.error('Error fetching data from external API:', apiErr);
+                                return res.status(500).json({ error: 'Error fetching data from external API' });
                             }
-                        }else{
-                            res.status(429).json({message:"It is advised to hit this API once in every 5 minutes,but it seems that you have crossed this limit. Please try again after 5 minutes."})
+                        } else {
+                            return res.status(400).json({ error: 'Missing startTime or endTime parameters' });
                         }
-                        
+                    } else {
+                        return res.status(429).json({ message: "It is advised to hit this API once every minute, but it seems that you have crossed this limit. Please try again after 5 minute." });
                     }
+                } else {
+                    return res.status(404).json({ message: "No API logs found." });
                 }
-            })
-            
+            });
         } catch (error) {
             console.error('Error fetching data:', error);
-            res.status(500).json({ error: 'Internal Server Error' });
+            return res.status(500).json({ error: 'Internal Server Error' });
         }
     });
     
-    
-    
 
 
-    router.post('/saveEmpLeads',(req,res)=>{
+    
+    // =====================================================
+
+
+    router.post('/saveEmpLeads', (req, res) => {
+        console.log("saveEmpLeads");
         const {
             emp_id,
             leads_id,
@@ -82,7 +150,7 @@ module.exports = (db) =>{
             remember,
             reminder_date
         } = req.body;
-        
+    
         const currentDate = moment().format('YYYY-MM-DD HH:mm:ss');
     
         const saveLeads = `INSERT INTO following_leads
@@ -103,7 +171,6 @@ module.exports = (db) =>{
                 created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     
-        // Provide default values for missing fields using nullish coalescing operator
         const params = [
             emp_id ?? null,
             leads_id ?? null,
@@ -117,24 +184,25 @@ module.exports = (db) =>{
             product_name ?? null,
             leads_query ?? null,
             remember ?? null,
-            reminder_date ?? null,
+            reminder_date || null,
             currentDate
         ];
     
         db.query(saveLeads, params, (err, results) => {
-            if(err) {
+            if (err) {
                 console.error("Error saving leads data:", err);
-                 res.status(500).json({ message: "Internal server error." });
+                res.status(500).json({ message: "Internal server error." });
             } else {
                 console.log("Leads data added successfully.");
-                 res.status(200).json({ message: "Leads data added successfully." });
+                res.status(200).json({ message: "Leads data added successfully." });
             }
         });
     });
 
-
+// =======================================================================================================================
     
     router.get('/getFollowingLeadsMobile',(req,res)=>{
+        // console.log("run");
         const getData = 'select leads_mobile from following_leads';
         db.query(getData,(getErr,getRes)=>{
             if(getErr){
@@ -147,7 +215,7 @@ module.exports = (db) =>{
         })
     })
     
-
+// ==================================================================
 
     router.get('/followingLeadsByEmpId', (req, res) => {
         const { emp_id, reminderDate, startDate, endDate, state, city } = req.query;
@@ -179,7 +247,7 @@ module.exports = (db) =>{
     
         query += " ORDER BY leads.reminder_date ASC";
     
-        console.log("Query:", query);
+        // console.log("Query:", query);
     
         db.query(query, (getErr, getRes) => {
             if (getErr) {
@@ -187,13 +255,13 @@ module.exports = (db) =>{
                 console.log("Error :", getErr)
             } else {
                 res.status(200).json(getRes);
-                console.log("Data :", getRes)
+                // console.log("Data :", getRes)
             }
         });
     });
     
 
-
+// ======================================================
 
     router.get('/empFollowLeadsForAdmin', (req, res) => {
         const { reminderDate, startDate, endDate, state, city, emp_id } = req.query;
@@ -227,7 +295,7 @@ module.exports = (db) =>{
     
         query += " ORDER BY leads.reminder_date ASC";
     
-        console.log("Query:", query);
+        // console.log("Query:", query);
     
         db.query(query, (getErr, getRes) => {
             if (getErr) {
@@ -235,12 +303,12 @@ module.exports = (db) =>{
                 res.status(500).json({ message: "Internal Server Error. Could not fetch Employee Following Leads." });
             } else {
                 res.status(200).json(getRes);
-                console.log("Data :", getRes);
+                // console.log("Data :", getRes);
             }
         });
     });
     
-    
+    // =====================================================================================
 router.put('/updateFlwLeadForEmp/:id',(req,res)=>{
     try{
         const follow_id = req.params.id;
@@ -305,10 +373,11 @@ router.put('/updateFlwLeadForEmp/:id',(req,res)=>{
     }
 })
 
-
+// =============================================================================
     
     router.get('/leadsCountForDashboard',(req,res)=>{
         const currentDate = moment().format("YYYY-MM-DD");
+        console.log(currentDate);
         const getData = `
         SELECT COUNT(CASE WHEN reminder_date = '${currentDate}' THEN 1 END) AS reminder_date_count,
         COUNT(CASE WHEN DATE(created_at) = '${currentDate}' THEN 1 END) AS created_at_count FROM 
@@ -325,7 +394,7 @@ router.put('/updateFlwLeadForEmp/:id',(req,res)=>{
         })
     })
     
-
+// =================================================================================
 
     router.get('/leadsCountForEmpDashboard/:empId', (req, res) => {
         const empId = req.params.empId;

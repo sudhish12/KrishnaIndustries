@@ -52,6 +52,16 @@ const EmpTodayFlwLeadsCount = () => {
     fetchLeadsCount();
   }, [empId]);
 
+  useEffect(() => {
+    axios.get(`${config.apiUrl}/employee/name/${empId}`)
+      .then((res) => {
+        setEmpData(res.data);
+        console.log("Employee Data :", res.data);
+      })
+      .catch((err) => {
+        console.log("Error, can't fetch employee data. Try again later.");
+      });
+  }, [empId]);
   return (
     <CardWrapper border={false} content={false}>
       <Box sx={{ p: 2 }}>
